@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Gemini in Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .chat-container {
+            width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .chat-input {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+
+        .chat-input input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+        }
+
+        .user-message {
+            text-align: right;
+            color: #007bff;
+        }
+
+        .bot-message {
+            text-align: left;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Chat with Gemini in Firebase</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="promptInput">
+            <button onclick="addPrompt()">Send</button>
+        </div>
+    </div>
+
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: 'your-apikey',
+            authDomain: "your-authDomain",
+            projectId: "your-projectId",
+            storageBucket: "your-storageBucket",
+            messagingSenderId: "your-messagingSenderId",
+            appId: "your-appId"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.firestore();
+        const generateRef = db.collection("generate");
+
+        function addPrompt() {
+            const promptInput = document.getElementById("promptInput").value;
+            if (promptInput.trim() === "") {
+                alert("Please enter a prompt.");
+                return;
+            }
+
+            generateRef.add({
+                prompt: promptInput
+            })
+                .then(() => {
+                    console.log("Prompt added successfully.");
+                    document.getElementById("promptInput").value = "";
+                })
+                .catch(error => {
+                    console.error("Error adding prompt:", error);
+                });
+        }
+
+        function listenForResponse() {
+            generateRef.onSnapshot(snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === "added") {
+                        const response = change.doc.get("response");
+                        if (response) {
+                            displayMessage(response, 'bot-message');
+                        }
+                    }
+                });
+            });
+        }
+
+        function displayMessage(message, className) {
+            const chatMessages = document.getElementById("chatMessages");
+            const messageElement = document.createElement("div");
+            messageElement.textContent = message;
+            messageElement.classList.add("chat-message", className);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Call the function to listen for responses
+        listenForResponse();
+    </script>
+</body>
+
+</html>
